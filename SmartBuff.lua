@@ -949,17 +949,48 @@ end
 -- END SMARTBUFF_CheckUnitBuffTimers
 
 -- check if the player is shapeshifted
-function SMARTBUFF_IsShapeshifted()
-	if (sPlayerClass == "DRUID") then
-	  local i;
-  	for i = 1, GetNumShapeshiftForms() do
-  		local icon, name, active = GetShapeshiftFormInfo(i);
-  		if (active == 1 and SMARTBUFF_GetSpellID(name) ~= nil) then
-        return true, name;
+function SMARTBUFF_IsShapeshifted(currentBuff)
+  if (sPlayerClass == "DRUID") then
+    local allowedBuffs = {
+      ["Tree of Life Form"] = {SMARTBUFF_DRUID[1], SMARTBUFF_DRUID[2]},  -- Both buffs
+      ["Moonkin Form"] = {SMARTBUFF_DRUID[2]}  -- Only Thorns
+    }
+    
+    for i = 1, GetNumShapeshiftForms() do
+      local icon, name, active = GetShapeshiftFormInfo(i)
+      
+      if active == 1 then
+        -- Block if form not in allowed list
+        if not allowedBuffs[name] then
+          return true, name
+        end
+        
+        -- If no specific buff being checked, only allow UI for permitted buffs
+        if not currentBuff then
+          if name == "Moonkin Form" and SMARTBUFF_DRUID[1] then
+            return true, name
+          end
+          return false, nil
+        end
+        
+        -- Check if buff is allowed for this form
+        local isAllowed = false
+        for _, buff in ipairs(allowedBuffs[name]) do
+          if buff == currentBuff then
+            isAllowed = true
+            break
+          end
+        end
+        
+        if isAllowed then
+          return false, nil
+        else
+          return true, name
+        end
       end
-  	end  
+    end
   end
-  return false, nil;
+  return false, nil
 end
 -- END SMARTBUFF_IsShapeshifted
 
